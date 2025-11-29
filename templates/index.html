@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DETON8R | Cyber Defense Console</title>
+    <style>
+        :root {
+            --bg-dark: #0a0a0a;
+            --bg-card: #141414;
+            --accent-green: #00ff9d;
+            --accent-red: #ff3c3c;
+            --accent-blue: #00bcd4;
+            --accent-warn: #ff9800;
+            --text-main: #e0e0e0;
+            --text-dim: #666;
+            --border: #333;
+        }
+        body { margin: 0; padding: 0; background: var(--bg-dark); color: var(--text-main); font-family: 'Segoe UI', monospace; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+
+        header { background: #000; padding: 15px 30px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        h1 { margin: 0; font-weight: 300; letter-spacing: 2px; color: var(--accent-blue); }
+        .clock { color: var(--accent-green); font-weight: bold; }
+
+        .container { display: flex; flex: 1; overflow: hidden; }
+
+        nav { width: 250px; background: #0f0f0f; border-right: 1px solid var(--border); display: flex; flex-direction: column; }
+        nav button { background: none; border: none; color: var(--text-dim); padding: 20px; text-align: left; cursor: pointer; font-size: 16px; transition: 0.3s; border-left: 3px solid transparent; }
+        nav button:hover { color: #fff; background: #1a1a1a; }
+        nav button.active { color: var(--accent-blue); border-left: 3px solid var(--accent-blue); background: #1a1a1a; }
+
+        main { flex: 1; padding: 30px; overflow-y: auto; position: relative; }
+
+        .panel { display: none; animation: fadeIn 0.3s; }
+        .panel.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .card { background: var(--bg-card); border: 1px solid var(--border); padding: 20px; margin-bottom: 20px; border-radius: 4px; }
+        .card h2 { margin-top: 0; color: var(--accent-blue); font-size: 18px; text-transform: uppercase; border-bottom: 1px solid #222; padding-bottom: 10px; }
+
+        .btn { padding: 10px 20px; border: none; cursor: pointer; font-weight: bold; text-transform: uppercase; margin-right: 10px; transition: 0.2s; border-radius: 2px; }
+        .btn-sm { padding: 5px 10px; font-size: 12px; margin-right: 5px; }
+        .btn-green { background: var(--accent-green); color: #000; }
+        .btn-red { background: var(--accent-red); color: #fff; }
+        .btn-blue { background: var(--accent-blue); color: #000; }
+        .btn-outline { background: transparent; border: 1px solid var(--accent-blue); color: var(--accent-blue); }
+        .btn-outline:hover { background: rgba(0, 188, 212, 0.1); }
+
+        input[type="text"], input[type="password"] { background: #222; border: 1px solid #444; color: #fff; padding: 10px; width: 100%; box-sizing: border-box; font-family: monospace; }
+
+        .scheduler-group { display: flex; gap: 5px; align-items: center; background: #222; padding: 5px; border-radius: 4px; border: 1px solid #444; }
+        .scheduler-group input { width: 45px; background: transparent; border: none; color: #fff; text-align: center; font-size: 14px; padding: 5px; }
+        .scheduler-group span { font-size: 11px; color: #888; text-transform: uppercase; margin-right: 5px; }
+
+        .status-box { text-align: center; padding: 20px; border: 2px solid #333; margin-bottom: 20px; transition: 0.3s; }
+        .status-idle { border-color: var(--accent-blue); color: var(--accent-blue); box-shadow: 0 0 10px rgba(0, 188, 212, 0.2); }
+        .status-monitoring { border-color: var(--accent-green); color: var(--accent-green); box-shadow: 0 0 15px rgba(0, 255, 157, 0.3); animation: pulse 2s infinite; }
+        .status-critical { border-color: var(--accent-red); color: var(--accent-red); box-shadow: 0 0 20px rgba(255, 60, 60, 0.5); animation: shake 0.5s; }
+        .status-isolated { border-color: #ff9800; color: #ff9800; background: rgba(255, 152, 0, 0.1); }
+        #log-window { background: #000; border: 1px solid #333; height: 300px; overflow-y: auto; padding: 10px; font-family: 'Consolas', monospace; font-size: 13px; color: var(--accent-green); white-space: pre-wrap; }
+
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th { text-align: left; border-bottom: 2px solid #333; padding: 10px; color: #888; }
+        td { border-bottom: 1px solid #222; padding: 10px; }
+        tr:hover { background: #1a1a1a; }
+
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 100; justify-content: center; align-items: center; }
+        .modal { background: var(--bg-card); border: 1px solid var(--accent-blue); padding: 20px; width: 60%; max-height: 80%; display: flex; flex-direction: column; border-radius: 4px; box-shadow: 0 0 30px rgba(0, 188, 212, 0.2); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 10px; }
+        .modal-body { overflow-y: auto; flex: 1; }
+        .file-list-item { padding: 8px; border-bottom: 1px solid #222; display: flex; align-items: center; gap: 10px; }
+        .file-list-item:hover { background: #222; }
+
+        .switch { position: relative; display: inline-block; width: 40px; height: 20px; margin-left: 10px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border-radius: 20px; }
+        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--accent-green); }
+        input:checked + .slider:before { transform: translateX(20px); }
+
+    </style>
+</head>
+<body>
+
+<div id="file-modal" class="modal-overlay">
+    <div class="modal">
+        <div class="modal-header">
+            <h2 id="modal-title" style="margin:0; font-size: 16px;">Backup Contents</h2>
+            <button class="btn btn-sm btn-red" onclick="closeModal()">X</button>
+        </div>
+        <div class="modal-body" id="modal-file-list">
+            <!-- File items injected here -->
+        </div>
+        <div style="margin-top: 15px; text-align: right;">
+            <button class="btn btn-blue" onclick="restoreSelectedFiles()">Restore Selected Files</button>
+        </div>
+    </div>
+</div>
+
+<header>
+    <h1>DETON8R <span style="font-size: 0.5em; color: #666;">// WEB COMMAND</span></h1>
+    <div class="clock" id="clock">00:00:00</div>
+</header>
+
+<div class="container">
+    <nav>
+        <button class="active" onclick="showPanel('dashboard')">🛡️ Dashboard</button>
+        <button onclick="showPanel('recovery')">💾 Recovery</button>
+        <button onclick="showPanel('config')">⚙️ Configuration</button>
+        <button onclick="showPanel('logs')">📝 Live Logs</button>
+    </nav>
+
+    <main>
+        <!-- DASHBOARD PANEL -->
+        <div id="dashboard" class="panel active">
+            <div id="status-display" class="status-box status-idle">
+                <h2 id="status-text" style="margin:0; font-size: 24px;">SYSTEM IDLE</h2>
+            </div>
+
+            <div class="card">
+                <h2>🛑 Red Team Intel / Target Selection</h2>
+                <p style="color: #888; margin-bottom: 5px;">Target Directory (Edit to Change):</p>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="target-path-display" value="Loading..." style="color: var(--accent-red); font-weight: bold;">
+                    <button class="btn btn-blue" onclick="copyPath()">COPY</button>
+                    <button class="btn btn-green" onclick="updateTargetPath()">SET</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Response Operations</h2>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-green" onclick="apiCall('/api/detector/start')">▶ Start Sensor</button>
+                    <button class="btn btn-blue" style="background:#444; color:#fff;" onclick="apiCall('/api/detector/stop')">⏹ Stop Sensor</button>
+                    <div style="flex:1"></div>
+                    <button class="btn btn-red" onclick="apiCall('/api/response/isolate')">🚫 Isolate Host</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- RECOVERY PANEL -->
+        <div id="recovery" class="panel">
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h2>Snapshot Manager</h2>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="color: #888; font-size: 12px;">AUTO-BACKUP INTERVAL:</span>
+
+                        <div class="scheduler-group">
+                            <input type="number" id="sched-mon" placeholder="M" min="0" value="0"> <span>Mon</span>
+                            <input type="number" id="sched-day" placeholder="D" min="0" value="0"> <span>Day</span>
+                            <input type="number" id="sched-hr" placeholder="H" min="0" value="0"> <span>Hr</span>
+                            <input type="number" id="sched-min" placeholder="M" min="0" value="5"> <span>Min</span>
+                            <input type="number" id="sched-sec" placeholder="S" min="0" value="0"> <span>Sec</span>
+                        </div>
+
+                        <label class="switch">
+                            <input type="checkbox" id="auto-backup-toggle" onchange="toggleAutoBackup()">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <button class="btn btn-blue" onclick="createBackup()">📸 Snapshot Now</button>
+                    <button class="btn btn-blue" style="background: #333; color: #fff;" onclick="loadBackups()">🔄 Refresh List</button>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Snapshot Name</th>
+                            <th>Timestamp</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="backup-list">
+                        <tr><td colspan="3">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- CONFIG PANEL -->
+        <div id="config" class="panel">
+            <div class="card">
+                <h2>System Paths</h2>
+                <label>Monitor Directory (Victim)</label>
+                <input type="text" id="conf-work-dir">
+                <br><br>
+                <label>Backup Directory</label>
+                <input type="text" id="conf-backup-dir">
+            </div>
+
+            <div class="card">
+                <h2>Splunk Integration</h2>
+                <label>HEC URL</label>
+                <input type="text" id="conf-splunk-url" placeholder="https://localhost:8088">
+                <br><br>
+                <label>HEC Token</label>
+                <input type="text" id="conf-splunk-token" type="password">
+                <br><br>
+                <button class="btn btn-sm btn-outline" onclick="sendTestAlert()">📡 Send Test Alert to Splunk</button>
+            </div>
+
+            <button class="btn btn-green" onclick="saveConfig()">💾 Save Configuration</button>
+        </div>
+
+        <!-- LOGS PANEL -->
+        <div id="logs" class="panel">
+            <div class="card">
+                <h2>System Events</h2>
+                <div id="log-window">Loading logs...</div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+    // --- UI LOGIC ---
+    let autoBackupTimer = null;
+    let currentViewingBackup = null;
+
+    function showPanel(id) {
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+        event.target.classList.add('active');
+    }
+
+    function updateClock() {
+        document.getElementById('clock').innerText = new Date().toLocaleTimeString();
+    }
+    setInterval(updateClock, 1000);
+
+    // --- API INTERACTIONS ---
+    async function apiCall(endpoint, method="POST", body=null) {
+        try {
+            const opts = { method: method, headers: { 'Content-Type': 'application/json' } };
+            if (body) opts.body = JSON.stringify(body);
+            const res = await fetch(endpoint, opts);
+            // Don't throw error here, let the caller handle the response body for details
+            const data = await res.json();
+            return data;
+        } catch (e) {
+            console.error("API Error:", e);
+            return { success: false, error: "Network/Server Error: " + e.message };
+        }
+    }
+
+    // Polling Status & Logs
+    async function updateStatus() {
+        const data = await apiCall('/api/status', 'GET');
+        if (!data || !data.target_dir) return; // Basic validation
+
+        const box = document.getElementById('status-display');
+        const text = document.getElementById('status-text');
+        const input = document.getElementById('target-path-display');
+
+        // ONLY update input if user is NOT currently typing in it
+        if (document.activeElement !== input) {
+            input.value = data.target_dir;
+        }
+
+        box.className = 'status-box'; // Reset
+
+        if (data.status && data.status.includes("CRITICAL")) {
+            box.classList.add('status-critical');
+            text.innerText = "⚠ " + data.status;
+        } else if (data.status === "MONITORING") {
+            box.classList.add('status-monitoring');
+            text.innerText = "● ACTIVE MONITORING";
+        } else if (data.status === "ISOLATED") {
+            box.classList.add('status-isolated');
+            text.innerText = "🚫 HOST ISOLATED";
+        } else {
+            box.classList.add('status-idle');
+            text.innerText = "○ SYSTEM IDLE";
+        }
+    }
+
+    async function updateLogs() {
+        if (!document.getElementById('logs').classList.contains('active')) return;
+        const logs = await apiCall('/api/logs', 'GET');
+        if (logs && Array.isArray(logs)) {
+            const win = document.getElementById('log-window');
+            win.innerText = logs.join("");
+            win.scrollTop = win.scrollHeight;
+        }
+    }
+    setInterval(updateStatus, 1000);
+    setInterval(updateLogs, 2000);
+
+    // --- DASHBOARD ACTIONS ---
+    async function updateTargetPath() {
+        const newPath = document.getElementById('target-path-display').value;
+        if (!newPath) return;
+
+        const currentConfig = await apiCall('/api/config', 'GET');
+        const body = {
+            work_dir: newPath,
+            backup_dir: currentConfig.backup_dir,
+            splunk_url: currentConfig.splunk_url,
+            splunk_token: currentConfig.splunk_token
+        };
+
+        const res = await apiCall('/api/config', 'POST', body);
+        if (res && res.success) {
+            alert("Target Directory Updated Successfully!");
+            document.getElementById('conf-work-dir').value = newPath;
+        } else {
+            alert("Failed to update path.");
+        }
+    }
+
+    // --- BACKUP MANAGER ---
+
+    async function loadBackups() {
+        const list = await apiCall('/api/backups', 'GET');
+        const tbody = document.getElementById('backup-list');
+        tbody.innerHTML = "";
+
+        if (!list || list.length === 0) {
+            tbody.innerHTML = "<tr><td colspan='3'>No backups found.</td></tr>";
+            return;
+        }
+
+        list.forEach(bk => {
+            const name = bk[0];
+            const ts = bk[1];
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${name}</td>
+                <td>${ts}</td>
+                <td>
+                    <button class="btn btn-sm btn-green" onclick="restoreBackup('${name}')">RESTORE ALL</button>
+                    <button class="btn btn-sm btn-blue" onclick="viewBackup('${name}')">VIEW</button>
+                    <button class="btn btn-sm btn-red" onclick="deleteBackup('${name}')">DEL</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    async function createBackup(isAuto=false) {
+        const res = await apiCall('/api/backups/create');
+        if (res && res.success && !isAuto) {
+            alert("Snapshot Created!"); loadBackups();
+        } else if (isAuto) {
+            console.log("Auto-backup executed");
+        }
+    }
+
+    function toggleAutoBackup() {
+        const enabled = document.getElementById('auto-backup-toggle').checked;
+
+        if (enabled) {
+            const mon = parseInt(document.getElementById('sched-mon').value) || 0;
+            const day = parseInt(document.getElementById('sched-day').value) || 0;
+            const hr = parseInt(document.getElementById('sched-hr').value) || 0;
+            const min = parseInt(document.getElementById('sched-min').value) || 0;
+            const sec = parseInt(document.getElementById('sched-sec').value) || 0;
+
+            const totalMs = (mon * 30 * 24 * 3600 * 1000) +
+                            (day * 24 * 3600 * 1000) +
+                            (hr * 3600 * 1000) +
+                            (min * 60 * 1000) +
+                            (sec * 1000);
+
+            if (totalMs < 1000) {
+                alert("Interval too short. Minimum 1 second.");
+                document.getElementById('auto-backup-toggle').checked = false;
+                return;
+            }
+
+            console.log(`Auto-backup enabled. Interval: ${totalMs} ms`);
+            autoBackupTimer = setInterval(() => createBackup(true), totalMs);
+        } else {
+            clearInterval(autoBackupTimer);
+            console.log("Auto-backup disabled");
+        }
+    }
+
+    // --- ADVANCED OPERATIONS ---
+
+    async function deleteBackup(name) {
+        if (!confirm(`Permanently delete ${name}?`)) return;
+        const res = await apiCall(`/api/backups/${name}`, 'DELETE');
+        if (res && res.success) loadBackups();
+    }
+
+    async function viewBackup(name) {
+        currentViewingBackup = name;
+        document.getElementById('modal-title').innerText = `Contents of ${name}`;
+        document.getElementById('file-modal').style.display = 'flex';
+        document.getElementById('modal-file-list').innerHTML = "Fetching file list...";
+
+        const files = await apiCall(`/api/backups/files?name=${name}`, 'GET');
+        const listDiv = document.getElementById('modal-file-list');
+        listDiv.innerHTML = "";
+
+        if (!files || files.length === 0) {
+            listDiv.innerHTML = "No files found or unable to read archive.";
+            return;
+        }
+
+        files.forEach(f => {
+            const div = document.createElement('div');
+            div.className = 'file-list-item';
+            div.innerHTML = `<input type="checkbox" value="${f}" class="restore-check"> <span>${f}</span>`;
+            listDiv.appendChild(div);
+        });
+    }
+
+    function closeModal() {
+        document.getElementById('file-modal').style.display = 'none';
+        currentViewingBackup = null;
+    }
+
+    async function restoreSelectedFiles() {
+        if(!currentViewingBackup) return;
+        const checks = document.querySelectorAll('.restore-check:checked');
+        const files = Array.from(checks).map(c => c.value);
+        if(files.length === 0) { alert("No files selected."); return; }
+        if(!confirm(`Restore ${files.length} selected files?`)) return;
+
+        const res = await apiCall('/api/backups/restore-selective', 'POST', { name: currentViewingBackup, files: files });
+        if (res && res.success) {
+            alert(`Restored ${res.count} files successfully.`);
+            closeModal();
+        } else {
+            alert("Restore failed. Check logs.");
+        }
+    }
+
+    async function restoreBackup(name) {
+        if (!confirm("Are you sure? This will wipe current data and restore snapshot.")) return;
+        const res = await apiCall('/api/backups/restore', 'POST', { name: name });
+        if (res && res.success) alert("Restored Successfully!");
+    }
+
+    // --- CONFIG ---
+
+    async function loadConfig() {
+        const cfg = await apiCall('/api/config', 'GET');
+        document.getElementById('conf-work-dir').value = cfg.work_dir;
+        document.getElementById('conf-backup-dir').value = cfg.backup_dir;
+        document.getElementById('conf-splunk-url').value = cfg.splunk_url;
+        document.getElementById('conf-splunk-token').value = cfg.splunk_token;
+    }
+
+    async function saveConfig() {
+        const body = {
+            work_dir: document.getElementById('conf-work-dir').value,
+            backup_dir: document.getElementById('conf-backup-dir').value,
+            splunk_url: document.getElementById('conf-splunk-url').value,
+            splunk_token: document.getElementById('conf-splunk-token').value
+        };
+        await apiCall('/api/config', 'POST', body);
+        alert("Configuration Saved.");
+    }
+
+    async function sendTestAlert() {
+        // Send manual test
+        const res = await apiCall('/api/test-alert', 'POST');
+
+        if (res.success) {
+            alert("Test event sent to Splunk!\nCheck your Splunk dashboard.");
+        } else {
+            // Display exact error from backend
+            alert("FAILED TO SEND TEST:\n" + (res.error || "Unknown Error"));
+        }
+    }
+
+    function copyPath() {
+        const copyText = document.getElementById("target-path-display");
+        copyText.select();
+        document.execCommand("copy");
+        alert("Path copied to clipboard");
+    }
+
+    // Init
+    loadBackups();
+    loadConfig();
+
+</script>
+</body>
+</html>

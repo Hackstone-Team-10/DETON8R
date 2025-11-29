@@ -1,0 +1,27 @@
+# --- Python Basics ---
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+
+# --- IDE Settings ---
+.idea/
+.vscode/
+
+# --- Configuration & Secrets (CRITICAL) ---
+# Contains your personal paths and Splunk tokens
+deton8r_config.json
+
+# --- Runtime Data ---
+# Do not upload the actual backups or the simulation data
+lab_data/backups/*
+lab_data/workdir/*
+# (Optional) Keep the folders but ignore content
+!lab_data/backups/.gitkeep
+!lab_data/workdir/.gitkeep
+
+# --- Logs ---
+# Do not upload your runtime logs
+logs/*.log
+logs/*.jsonl
