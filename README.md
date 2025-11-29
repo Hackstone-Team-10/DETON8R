@@ -44,7 +44,7 @@ Administrator/Root privileges (Required for Firewall Isolation)
 
 #### 1. Clone & Install
 ```
-git clone [https://github.com/yourusername/DETON8R.git](https://github.com/yourusername/DETON8R.git)
+git clone https://github.com/Hackstone-Team-10/DETON8R.git
 cd DETON8R
 pip install -r requirements.txt
 ```
